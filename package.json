@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:models": "node scripts/build-hq-glb.mjs && node scripts/build-player-glb.mjs && node scripts/build-vehicle-glb.mjs",
     "start": "next start",
     "lint": "eslint"
   },

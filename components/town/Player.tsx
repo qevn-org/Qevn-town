@@ -1,27 +1,77 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useGLTF } from '@react-three/drei';
 import { useTownStore } from '@/lib/store';
 import { TOWN_LOCATIONS, TownLocation } from '@/data/locations';
 import { soundManager } from '@/lib/audio';
 import { trackEvent } from '@/lib/analytics';
 
 /**
- * Stylized Hero Player Character
- * Designed according to character visual reference (animated film style):
- * Expressive face, swept-back textured brown hair, plaid flannel over white tee,
- * slim dark denim jeans, brown skate sneakers with white soles, and sculpted hands.
+ * Hero Stylized Player Character (Phase B)
+ * Loaded from public/models/characters/player/hero_player.glb.
+ * Matches animated-film visual benchmark:
+ * Expressive face, swept-back brown hair, red/green plaid flannel over white tee,
+ * dark denim indigo jeans, brown suede skate sneakers with thick white rubber cupsole.
  */
+function HeroPlayerModel({
+  onMountNodes,
+}: {
+  onMountNodes: (nodes: {
+    head: THREE.Object3D | null;
+    torso: THREE.Object3D | null;
+    leftArm: THREE.Object3D | null;
+    rightArm: THREE.Object3D | null;
+    leftLeg: THREE.Object3D | null;
+    rightLeg: THREE.Object3D | null;
+  }) => void;
+}) {
+  const { scene } = useGLTF('/models/characters/player/hero_player.glb');
+
+  const clonedScene = React.useMemo(() => {
+    const clone = scene.clone(true);
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    return clone;
+  }, [scene]);
+
+  useEffect(() => {
+    onMountNodes({
+      head: clonedScene.getObjectByName('Head_Assembly') || null,
+      torso: clonedScene.getObjectByName('Torso_Assembly') || null,
+      leftArm: clonedScene.getObjectByName('Arm_Left') || null,
+      rightArm: clonedScene.getObjectByName('Arm_Right') || null,
+      leftLeg: clonedScene.getObjectByName('Leg_Left') || null,
+      rightLeg: clonedScene.getObjectByName('Leg_Right') || null,
+    });
+  }, [clonedScene, onMountNodes]);
+
+  return <primitive object={clonedScene} />;
+}
+
 export function Player() {
   const groupRef = useRef<THREE.Group>(null);
-  const headGroupRef = useRef<THREE.Group>(null);
-  const torsoRef = useRef<THREE.Group>(null);
-  const leftLegRef = useRef<THREE.Group>(null);
-  const rightLegRef = useRef<THREE.Group>(null);
-  const leftArmRef = useRef<THREE.Group>(null);
-  const rightArmRef = useRef<THREE.Group>(null);
+  const limbsRef = useRef<{
+    head: THREE.Object3D | null;
+    torso: THREE.Object3D | null;
+    leftArm: THREE.Object3D | null;
+    rightArm: THREE.Object3D | null;
+    leftLeg: THREE.Object3D | null;
+    rightLeg: THREE.Object3D | null;
+  }>({
+    head: null,
+    torso: null,
+    leftArm: null,
+    rightArm: null,
+    leftLeg: null,
+    rightLeg: null,
+  });
 
   // Zustand state and actions
   const soundEnabled = useTownStore((s) => s.soundEnabled);
@@ -157,6 +207,8 @@ export function Player() {
     const isSprint = keys.current['ShiftLeft'] || keys.current['ShiftRight'];
     const speed = isSprint ? 12 : 6.8;
 
+    const limbs = limbsRef.current;
+
     if (isMoving) {
       const length = Math.hypot(moveX, moveZ);
       const normX = (moveX / length) * speed * delta;
@@ -172,22 +224,22 @@ export function Player() {
       currentRotation.current = THREE.MathUtils.lerp(currentRotation.current, targetAngle, delta * 15);
       groupRef.current.rotation.y = currentRotation.current;
 
-      // Stylized walking kinematics
+      // Kinematic stride
       walkCycle.current += delta * (isSprint ? 16 : 10.5);
-      const legSwing = Math.sin(walkCycle.current) * 0.65;
-      const armSwing = Math.sin(walkCycle.current) * 0.6;
-      const hipBob = Math.abs(Math.sin(walkCycle.current)) * 0.08;
+      const legSwing = Math.sin(walkCycle.current) * 0.55;
+      const armSwing = Math.sin(walkCycle.current) * 0.45;
+      const hipBob = Math.abs(Math.sin(walkCycle.current)) * 0.06;
 
-      if (leftLegRef.current && rightLegRef.current) {
-        leftLegRef.current.rotation.x = legSwing;
-        rightLegRef.current.rotation.x = -legSwing;
+      if (limbs.leftLeg && limbs.rightLeg) {
+        limbs.leftLeg.rotation.x = legSwing;
+        limbs.rightLeg.rotation.x = -legSwing;
       }
-      if (leftArmRef.current && rightArmRef.current) {
-        leftArmRef.current.rotation.x = -armSwing;
-        rightArmRef.current.rotation.x = armSwing;
+      if (limbs.leftArm && limbs.rightArm) {
+        limbs.leftArm.rotation.x = -armSwing;
+        limbs.rightArm.rotation.x = armSwing;
       }
-      if (torsoRef.current) {
-        torsoRef.current.rotation.y = Math.sin(walkCycle.current) * 0.1;
+      if (limbs.torso) {
+        limbs.torso.rotation.y = Math.sin(walkCycle.current) * 0.08;
       }
 
       groupRef.current.position.y = 0.04 + hipBob;
@@ -199,25 +251,25 @@ export function Player() {
         soundManager.playFootstep(soundEnabled);
       }
     } else {
-      // Gentle idle breathing sway
+      // Idle breathing sway
       const idleTime = Date.now() * 0.002;
-      if (leftLegRef.current && rightLegRef.current) {
-        leftLegRef.current.rotation.x = 0;
-        rightLegRef.current.rotation.x = 0;
+      if (limbs.leftLeg && limbs.rightLeg) {
+        limbs.leftLeg.rotation.x = 0;
+        limbs.rightLeg.rotation.x = 0;
       }
-      if (leftArmRef.current && rightArmRef.current) {
-        leftArmRef.current.rotation.x = Math.sin(idleTime) * 0.04;
-        rightArmRef.current.rotation.x = -Math.sin(idleTime) * 0.04;
+      if (limbs.leftArm && limbs.rightArm) {
+        limbs.leftArm.rotation.x = Math.sin(idleTime) * 0.04;
+        limbs.rightArm.rotation.x = -Math.sin(idleTime) * 0.04;
       }
-      if (headGroupRef.current) {
-        headGroupRef.current.position.y = 1.35 + Math.sin(idleTime * 1.5) * 0.015;
+      if (limbs.head) {
+        limbs.head.position.y = 1.52 + Math.sin(idleTime * 1.5) * 0.01;
       }
-      if (torsoRef.current) {
-        torsoRef.current.rotation.y = 0;
+      if (limbs.torso) {
+        limbs.torso.rotation.y = 0;
       }
       groupRef.current.position.y = 0.04;
 
-      // Secret 4: Bench idle
+      // Secret bench idle
       const px = groupRef.current.position.x;
       const pz = groupRef.current.position.z;
       if (Math.hypot(px - 0, pz - (-6)) < 2.5) {
@@ -252,235 +304,16 @@ export function Player() {
 
   return (
     <group ref={groupRef} position={[0, 0.04, 8]}>
-      {/* ================= 1. LEGS & SNEAKERS ================= */}
-      {/* Left Leg */}
-      <group ref={leftLegRef} position={[-0.14, 0.44, 0]}>
-        {/* Dark indigo denim jean leg */}
-        <mesh position={[0, -0.18, 0]} castShadow>
-          <cylinderGeometry args={[0.075, 0.065, 0.48, 12]} />
-          <meshStandardMaterial color="#1E293B" roughness={0.7} />
-        </mesh>
-        {/* Brown skate sneaker with white cupsole (Reference Image 0) */}
-        <group position={[0, -0.42, 0.04]}>
-          {/* White rubber sole */}
-          <mesh position={[0, 0.02, 0]} castShadow>
-            <boxGeometry args={[0.15, 0.04, 0.28]} />
-            <meshStandardMaterial color="#F8FAFC" roughness={0.6} />
-          </mesh>
-          {/* Brown leather sneaker upper */}
-          <mesh position={[0, 0.07, 0]} castShadow>
-            <boxGeometry args={[0.14, 0.07, 0.26]} />
-            <meshStandardMaterial color="#78350F" roughness={0.6} />
-          </mesh>
-          {/* Sneaker toe cap & laces */}
-          <mesh position={[0, 0.08, 0.08]}>
-            <boxGeometry args={[0.12, 0.03, 0.08]} />
-            <meshStandardMaterial color="#B45309" roughness={0.5} />
-          </mesh>
-        </group>
-      </group>
-
-      {/* Right Leg */}
-      <group ref={rightLegRef} position={[0.14, 0.44, 0]}>
-        <mesh position={[0, -0.18, 0]} castShadow>
-          <cylinderGeometry args={[0.075, 0.065, 0.48, 12]} />
-          <meshStandardMaterial color="#1E293B" roughness={0.7} />
-        </mesh>
-        <group position={[0, -0.42, 0.04]}>
-          <mesh position={[0, 0.02, 0]} castShadow>
-            <boxGeometry args={[0.15, 0.04, 0.28]} />
-            <meshStandardMaterial color="#F8FAFC" roughness={0.6} />
-          </mesh>
-          <mesh position={[0, 0.07, 0]} castShadow>
-            <boxGeometry args={[0.14, 0.07, 0.26]} />
-            <meshStandardMaterial color="#78350F" roughness={0.6} />
-          </mesh>
-          <mesh position={[0, 0.08, 0.08]}>
-            <boxGeometry args={[0.12, 0.03, 0.08]} />
-            <meshStandardMaterial color="#B45309" roughness={0.5} />
-          </mesh>
-        </group>
-      </group>
-
-      {/* ================= 2. TORSO & CLOTHING ================= */}
-      <group ref={torsoRef} position={[0, 0.76, 0]}>
-        {/* White crewneck t-shirt interior base */}
-        <mesh position={[0, 0, 0]} castShadow>
-          <boxGeometry args={[0.38, 0.54, 0.22]} />
-          <meshStandardMaterial color="#F1F5F9" roughness={0.7} />
-        </mesh>
-        {/* Red & Forest Green Plaid Flannel Overshirt (Matching Reference Image 0) */}
-        {/* Left shirt flap */}
-        <mesh position={[-0.14, -0.02, 0.02]} castShadow>
-          <boxGeometry args={[0.14, 0.56, 0.22]} />
-          <meshStandardMaterial color="#B91C1C" roughness={0.7} />
-        </mesh>
-        {/* Right shirt flap with chest pocket */}
-        <mesh position={[0.14, -0.02, 0.02]} castShadow>
-          <boxGeometry args={[0.14, 0.56, 0.22]} />
-          <meshStandardMaterial color="#B91C1C" roughness={0.7} />
-        </mesh>
-        {/* Back of flannel */}
-        <mesh position={[0, -0.02, -0.02]} castShadow>
-          <boxGeometry args={[0.4, 0.56, 0.2]} />
-          <meshStandardMaterial color="#14532D" roughness={0.7} />
-        </mesh>
-        {/* Folded shirt collar */}
-        <mesh position={[0, 0.28, 0.03]}>
-          <boxGeometry args={[0.32, 0.06, 0.18]} />
-          <meshStandardMaterial color="#991B1B" roughness={0.7} />
-        </mesh>
-
-        {/* Slender Sculpted Arms with Rolled Cuffs */}
-        {/* Left Arm */}
-        <group ref={leftArmRef} position={[-0.26, 0.22, 0]}>
-          {/* Plaid sleeve */}
-          <mesh position={[0, -0.16, 0]} castShadow>
-            <cylinderGeometry args={[0.06, 0.055, 0.32, 10]} />
-            <meshStandardMaterial color="#B91C1C" roughness={0.7} />
-          </mesh>
-          {/* Exposed forearm (soft skin tone) */}
-          <mesh position={[0, -0.34, 0]} castShadow>
-            <cylinderGeometry args={[0.045, 0.04, 0.18, 10]} />
-            <meshStandardMaterial color="#F8C8BA" roughness={0.65} />
-          </mesh>
-          {/* Sculpted hand with thumb */}
-          <group position={[0, -0.46, 0]}>
-            <mesh castShadow>
-              <boxGeometry args={[0.065, 0.1, 0.035]} />
-              <meshStandardMaterial color="#F8C8BA" roughness={0.65} />
-            </mesh>
-            {/* Thumb */}
-            <mesh position={[0.035, 0.02, 0.01]}>
-              <boxGeometry args={[0.025, 0.04, 0.025]} />
-              <meshStandardMaterial color="#F8C8BA" roughness={0.65} />
-            </mesh>
-          </group>
-        </group>
-
-        {/* Right Arm */}
-        <group ref={rightArmRef} position={[0.26, 0.22, 0]}>
-          <mesh position={[0, -0.16, 0]} castShadow>
-            <cylinderGeometry args={[0.06, 0.055, 0.32, 10]} />
-            <meshStandardMaterial color="#B91C1C" roughness={0.7} />
-          </mesh>
-          <mesh position={[0, -0.34, 0]} castShadow>
-            <cylinderGeometry args={[0.045, 0.04, 0.18, 10]} />
-            <meshStandardMaterial color="#F8C8BA" roughness={0.65} />
-          </mesh>
-          <group position={[0, -0.46, 0]}>
-            <mesh castShadow>
-              <boxGeometry args={[0.065, 0.1, 0.035]} />
-              <meshStandardMaterial color="#F8C8BA" roughness={0.65} />
-            </mesh>
-            <mesh position={[-0.035, 0.02, 0.01]}>
-              <boxGeometry args={[0.025, 0.04, 0.025]} />
-              <meshStandardMaterial color="#F8C8BA" roughness={0.65} />
-            </mesh>
-          </group>
-        </group>
-      </group>
-
-      {/* ================= 3. STYLIZED HEAD & EXPRESSIVE FACE ================= */}
-      {/* Inspired directly by Reference Image 0 (Cute animated 3D character) */}
-      <group ref={headGroupRef} position={[0, 1.34, 0]}>
-        {/* Slender neck */}
-        <mesh position={[0, -0.14, 0]} castShadow>
-          <cylinderGeometry args={[0.05, 0.065, 0.16, 10]} />
-          <meshStandardMaterial color="#F8C8BA" roughness={0.65} />
-        </mesh>
-
-        {/* Sculpted stylized head with soft chin */}
-        <mesh position={[0, 0.06, 0]} castShadow>
-          <sphereGeometry args={[0.22, 20, 20]} />
-          <meshStandardMaterial color="#F8C8BA" roughness={0.6} />
-        </mesh>
-
-        {/* Big expressive animated eyes (Green irises like Reference Image 0) */}
-        {/* Left Eye */}
-        <group position={[-0.08, 0.08, 0.18]}>
-          {/* White sclera */}
-          <mesh>
-            <sphereGeometry args={[0.042, 12, 12]} />
-            <meshStandardMaterial color="#FFFFFF" roughness={0.1} />
-          </mesh>
-          {/* Vibrant green iris */}
-          <mesh position={[0, 0, 0.026]} rotation={[Math.PI / 2, 0, 0]}>
-            <cylinderGeometry args={[0.024, 0.024, 0.01, 16]} />
-            <meshStandardMaterial color="#10B981" roughness={0.2} />
-          </mesh>
-          {/* Black pupil */}
-          <mesh position={[0, 0, 0.033]} rotation={[Math.PI / 2, 0, 0]}>
-            <cylinderGeometry args={[0.012, 0.012, 0.01, 12]} />
-            <meshBasicMaterial color="#0A0A0A" />
-          </mesh>
-          {/* Specular highlight glint */}
-          <mesh position={[0.008, 0.008, 0.038]}>
-            <sphereGeometry args={[0.005, 8, 8]} />
-            <meshBasicMaterial color="#FFFFFF" />
-          </mesh>
-        </group>
-
-        {/* Right Eye */}
-        <group position={[0.08, 0.08, 0.18]}>
-          <mesh>
-            <sphereGeometry args={[0.042, 12, 12]} />
-            <meshStandardMaterial color="#FFFFFF" roughness={0.1} />
-          </mesh>
-          <mesh position={[0, 0, 0.026]} rotation={[Math.PI / 2, 0, 0]}>
-            <cylinderGeometry args={[0.024, 0.024, 0.01, 16]} />
-            <meshStandardMaterial color="#10B981" roughness={0.2} />
-          </mesh>
-          <mesh position={[0, 0, 0.033]} rotation={[Math.PI / 2, 0, 0]}>
-            <cylinderGeometry args={[0.012, 0.012, 0.01, 12]} />
-            <meshBasicMaterial color="#0A0A0A" />
-          </mesh>
-          <mesh position={[0.008, 0.008, 0.038]}>
-            <sphereGeometry args={[0.005, 8, 8]} />
-            <meshBasicMaterial color="#FFFFFF" />
-          </mesh>
-        </group>
-
-        {/* Cute button nose with slight warm blush */}
-        <mesh position={[0, 0.04, 0.22]}>
-          <sphereGeometry args={[0.028, 12, 12]} />
-          <meshStandardMaterial color="#FB7185" roughness={0.7} />
-        </mesh>
-
-        {/* Friendly smile curve */}
-        <mesh position={[0, -0.03, 0.2]} rotation={[0.1, 0, Math.PI]}>
-          <cylinderGeometry args={[0.032, 0.032, 0.008, 12, 1, false, 0, Math.PI]} />
-          <meshStandardMaterial color="#881337" />
-        </mesh>
-
-        {/* Stylized Volumetric Swept Brown Hair (Reference Image 0) */}
-        {/* Main hair cap */}
-        <mesh position={[0, 0.14, -0.02]} castShadow>
-          <sphereGeometry args={[0.24, 16, 16]} />
-          <meshStandardMaterial color="#451A03" roughness={0.65} />
-        </mesh>
-        {/* Swept hair bangs front volume */}
-        <group position={[0, 0.22, 0.1]}>
-          <mesh position={[-0.07, 0, 0]} rotation={[0.2, -0.3, 0.4]} castShadow>
-            <boxGeometry args={[0.14, 0.09, 0.16]} />
-            <meshStandardMaterial color="#592008" roughness={0.65} />
-          </mesh>
-          <mesh position={[0.06, 0.02, 0]} rotation={[0.1, 0.3, -0.3]} castShadow>
-            <boxGeometry args={[0.16, 0.1, 0.16]} />
-            <meshStandardMaterial color="#451A03" roughness={0.65} />
-          </mesh>
-          <mesh position={[0, 0.05, -0.04]} castShadow>
-            <sphereGeometry args={[0.14, 12, 12]} />
-            <meshStandardMaterial color="#592008" roughness={0.65} />
-          </mesh>
-        </group>
-      </group>
-
-      {/* Subtle soft contact shadow puddle under player */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
-        <circleGeometry args={[0.42, 24]} />
-        <meshBasicMaterial color="#000000" opacity={0.32} transparent />
-      </mesh>
+      <React.Suspense fallback={null}>
+        <HeroPlayerModel
+          onMountNodes={(nodes) => {
+            limbsRef.current = nodes;
+          }}
+        />
+      </React.Suspense>
     </group>
   );
 }
+
+// Preload the hero character asset
+useGLTF.preload('/models/characters/player/hero_player.glb');
