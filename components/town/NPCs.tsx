@@ -4,127 +4,286 @@ import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Text } from '@react-three/drei';
+import { useTownStore } from '@/lib/store';
 
-interface NPCProps {
-  initialPos: [number, number, number];
-  color: string;
-  hatColor?: string;
-  name: string;
-  phrases: string[];
-  patrolRange?: number;
-  patrolAxis?: 'x' | 'z';
-}
-
-function StylizedNpc({
-  initialPos,
-  color,
-  hatColor = '#B7FF00',
+/**
+ * Tailored Creative Partner NPC (Julian)
+ * Designed directly after reference image 1:
+ * Tailored camel suit, brown turtleneck, gold buckle belt, Chelsea boots,
+ * expressive face with green eyes, side-parted dark hair, and proximity head-turn.
+ */
+function TailoredLeadNpc({
+  position,
   name,
   phrases,
-  patrolRange = 0,
-  patrolAxis = 'x',
-}: NPCProps) {
+}: {
+  position: [number, number, number];
+  name: string;
+  phrases: string[];
+}) {
   const groupRef = useRef<THREE.Group>(null);
-  const [currentPhraseIdx, setCurrentPhraseIdx] = useState(0);
-  const timeRef = useRef(0);
+  const headRef = useRef<THREE.Group>(null);
+  const playerPos = useTownStore((s) => s.playerPos);
+
+  const [phraseIdx, setPhraseIdx] = useState(0);
   const phraseTimer = useRef(0);
 
   useFrame((_, delta) => {
-    timeRef.current += delta;
     phraseTimer.current += delta;
-
-    if (phraseTimer.current > 7) {
+    if (phraseTimer.current > 7.5) {
       phraseTimer.current = 0;
-      setCurrentPhraseIdx((prev) => (prev + 1) % phrases.length);
+      setPhraseIdx((prev) => (prev + 1) % phrases.length);
     }
 
     if (!groupRef.current) return;
 
-    if (patrolRange > 0) {
-      const offset = Math.sin(timeRef.current * 0.8) * patrolRange;
-      if (patrolAxis === 'x') {
-        groupRef.current.position.x = initialPos[0] + offset;
-        groupRef.current.rotation.y = Math.cos(timeRef.current * 0.8) > 0 ? Math.PI / 2 : -Math.PI / 2;
+    // Gentle breathing and subtle weight shift
+    const time = Date.now() * 0.002;
+    groupRef.current.position.y = position[1] + Math.sin(time * 1.5) * 0.015;
+
+    // Proximity awareness: Look towards player if within 7 units
+    if (headRef.current && playerPos) {
+      const dx = playerPos[0] - (position[0] + groupRef.current.position.x);
+      const dz = playerPos[2] - (position[2] + groupRef.current.position.z);
+      const dist = Math.hypot(dx, dz);
+
+      if (dist < 7.0) {
+        const targetAngle = Math.atan2(dx, dz) - groupRef.current.rotation.y;
+        headRef.current.rotation.y = THREE.MathUtils.lerp(
+          headRef.current.rotation.y,
+          THREE.MathUtils.clamp(targetAngle, -0.7, 0.7),
+          delta * 4
+        );
       } else {
-        groupRef.current.position.z = initialPos[2] + offset;
-        groupRef.current.rotation.y = Math.cos(timeRef.current * 0.8) > 0 ? 0 : Math.PI;
+        headRef.current.rotation.y = THREE.MathUtils.lerp(
+          headRef.current.rotation.y,
+          Math.sin(time * 0.8) * 0.15,
+          delta * 2
+        );
       }
     }
-
-    // Walking / breathing bob
-    groupRef.current.position.y = initialPos[1] + Math.abs(Math.sin(timeRef.current * 3.5)) * 0.08;
   });
 
   return (
-    <group ref={groupRef} position={initialPos}>
-      {/* Torso */}
-      <mesh position={[0, 0.7, 0]} castShadow>
-        <boxGeometry args={[0.6, 0.7, 0.35]} />
-        <meshStandardMaterial color={color} roughness={0.6} />
-      </mesh>
-      <lineSegments position={[0, 0.7, 0]}>
-        <edgesGeometry args={[new THREE.BoxGeometry(0.62, 0.72, 0.37)]} />
-        <lineBasicMaterial color="#0A0A0A" />
-      </lineSegments>
-
-      {/* Head */}
-      <mesh position={[0, 1.25, 0]} castShadow>
-        <boxGeometry args={[0.38, 0.38, 0.38]} />
-        <meshStandardMaterial color="#F5D0C5" roughness={0.7} />
-      </mesh>
-
-      {/* Stylized Hat / Cap */}
-      <mesh position={[0, 1.48, 0]} castShadow>
-        <boxGeometry args={[0.42, 0.12, 0.42]} />
-        <meshStandardMaterial color={hatColor} roughness={0.4} />
-      </mesh>
-      <mesh position={[0, 1.44, 0.25]} castShadow>
-        <boxGeometry args={[0.38, 0.05, 0.22]} />
-        <meshStandardMaterial color={hatColor} roughness={0.4} />
-      </mesh>
-
-      {/* Legs */}
-      <mesh position={[-0.16, 0.2, 0]} castShadow>
-        <boxGeometry args={[0.18, 0.4, 0.2]} />
-        <meshStandardMaterial color="#0A0A0A" />
-      </mesh>
-      <mesh position={[0.16, 0.2, 0]} castShadow>
-        <boxGeometry args={[0.18, 0.4, 0.2]} />
-        <meshStandardMaterial color="#0A0A0A" />
-      </mesh>
-
-      {/* Floating Brutalist Speech Bubble */}
-      <group position={[0, 2.2, 0]}>
-        {/* Bubble frame */}
-        <mesh>
-          <planeGeometry args={[2.8, 0.8]} />
-          <meshBasicMaterial color="#0A0A0A" />
+    <group ref={groupRef} position={position}>
+      {/* ================= 1. LEGS & CHELSEA BOOTS (Reference Image 1) ================= */}
+      {/* Left Leg in Camel Trousers */}
+      <group position={[-0.13, 0.46, 0]}>
+        {/* Tailored trouser leg */}
+        <mesh position={[0, -0.18, 0]} castShadow>
+          <cylinderGeometry args={[0.07, 0.06, 0.52, 12]} />
+          <meshStandardMaterial color="#D7BA9A" roughness={0.65} />
         </mesh>
-        <mesh position={[0, 0, 0.01]}>
-          <planeGeometry args={[2.7, 0.72]} />
+        {/* Trouser cuff */}
+        <mesh position={[0, -0.42, 0]} castShadow>
+          <cylinderGeometry args={[0.075, 0.075, 0.05, 12]} />
+          <meshStandardMaterial color="#D7BA9A" roughness={0.65} />
+        </mesh>
+        {/* Brown Chelsea boot with heel */}
+        <mesh position={[0, -0.47, 0.03]} castShadow>
+          <boxGeometry args={[0.13, 0.1, 0.26]} />
+          <meshStandardMaterial color="#451A03" roughness={0.4} metalness={0.2} />
+        </mesh>
+      </group>
+
+      {/* Right Leg in Camel Trousers */}
+      <group position={[0.13, 0.46, 0]}>
+        <mesh position={[0, -0.18, 0]} castShadow>
+          <cylinderGeometry args={[0.07, 0.06, 0.52, 12]} />
+          <meshStandardMaterial color="#D7BA9A" roughness={0.65} />
+        </mesh>
+        <mesh position={[0, -0.42, 0]} castShadow>
+          <cylinderGeometry args={[0.075, 0.075, 0.05, 12]} />
+          <meshStandardMaterial color="#D7BA9A" roughness={0.65} />
+        </mesh>
+        <mesh position={[0, -0.47, 0.03]} castShadow>
+          <boxGeometry args={[0.13, 0.1, 0.26]} />
+          <meshStandardMaterial color="#451A03" roughness={0.4} metalness={0.2} />
+        </mesh>
+      </group>
+
+      {/* ================= 2. TORSO & TAILORED SUIT ================= */}
+      <group position={[0, 0.82, 0]}>
+        {/* Brown turtleneck base */}
+        <mesh position={[0, 0.08, 0]} castShadow>
+          <boxGeometry args={[0.34, 0.56, 0.2]} />
+          <meshStandardMaterial color="#542B14" roughness={0.7} />
+        </mesh>
+
+        {/* Tailored Camel Blazer Jacket (Reference Image 1) */}
+        {/* Left jacket flap with notch lapel */}
+        <mesh position={[-0.14, 0.02, 0.02]} castShadow>
+          <boxGeometry args={[0.15, 0.62, 0.22]} />
+          <meshStandardMaterial color="#D7BA9A" roughness={0.65} />
+        </mesh>
+        {/* Right jacket flap */}
+        <mesh position={[0.14, 0.02, 0.02]} castShadow>
+          <boxGeometry args={[0.15, 0.62, 0.22]} />
+          <meshStandardMaterial color="#D7BA9A" roughness={0.65} />
+        </mesh>
+        {/* Back of jacket */}
+        <mesh position={[0, 0.02, -0.02]} castShadow>
+          <boxGeometry args={[0.38, 0.62, 0.2]} />
+          <meshStandardMaterial color="#D7BA9A" roughness={0.65} />
+        </mesh>
+
+        {/* Brown leather belt with gold buckle */}
+        <mesh position={[0, -0.28, 0.02]}>
+          <boxGeometry args={[0.36, 0.05, 0.22]} />
+          <meshStandardMaterial color="#3E1A06" roughness={0.4} />
+        </mesh>
+        {/* Gold buckle */}
+        <mesh position={[0, -0.28, 0.13]}>
+          <boxGeometry args={[0.07, 0.06, 0.02]} />
+          <meshStandardMaterial color="#F59E0B" roughness={0.3} metalness={0.9} />
+        </mesh>
+
+        {/* Tailored arms */}
+        {/* Left Arm */}
+        <group position={[-0.26, 0.22, 0]}>
+          <mesh position={[0, -0.2, 0]} castShadow>
+            <cylinderGeometry args={[0.06, 0.055, 0.44, 10]} />
+            <meshStandardMaterial color="#D7BA9A" roughness={0.65} />
+          </mesh>
+          {/* Hand with green signet ring (Reference Image 1) */}
+          <group position={[0, -0.46, 0]}>
+            <mesh castShadow>
+              <boxGeometry args={[0.06, 0.1, 0.035]} />
+              <meshStandardMaterial color="#F8C8BA" roughness={0.65} />
+            </mesh>
+            {/* Signet ring */}
+            <mesh position={[-0.025, 0, 0.01]}>
+              <sphereGeometry args={[0.015, 8, 8]} />
+              <meshStandardMaterial color="#059669" roughness={0.2} metalness={0.7} />
+            </mesh>
+          </group>
+        </group>
+
+        {/* Right Arm */}
+        <group position={[0.26, 0.22, 0]}>
+          <mesh position={[0, -0.2, 0]} castShadow>
+            <cylinderGeometry args={[0.06, 0.055, 0.44, 10]} />
+            <meshStandardMaterial color="#D7BA9A" roughness={0.65} />
+          </mesh>
+          <group position={[0, -0.46, 0]}>
+            <mesh castShadow>
+              <boxGeometry args={[0.06, 0.1, 0.035]} />
+              <meshStandardMaterial color="#F8C8BA" roughness={0.65} />
+            </mesh>
+          </group>
+        </group>
+      </group>
+
+      {/* ================= 3. STYLIZED HEAD & REFINED HAIRCUT ================= */}
+      {/* Inspired directly by Reference Image 1 (Refined dark hair, expressive eyes) */}
+      <group ref={headRef} position={[0, 1.44, 0]}>
+        {/* Brown turtleneck collar */}
+        <mesh position={[0, -0.16, 0]} castShadow>
+          <cylinderGeometry args={[0.06, 0.075, 0.16, 12]} />
+          <meshStandardMaterial color="#542B14" roughness={0.7} />
+        </mesh>
+
+        {/* Sculpted refined face */}
+        <mesh position={[0, 0.05, 0]} castShadow>
+          <sphereGeometry args={[0.21, 20, 20]} />
+          <meshStandardMaterial color="#F8C8BA" roughness={0.6} />
+        </mesh>
+
+        {/* Expressive green eyes (Reference Image 1) */}
+        <group position={[-0.075, 0.07, 0.17]}>
+          <mesh>
+            <sphereGeometry args={[0.038, 12, 12]} />
+            <meshStandardMaterial color="#FFFFFF" roughness={0.1} />
+          </mesh>
+          <mesh position={[0, 0, 0.024]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.022, 0.022, 0.01, 14]} />
+            <meshStandardMaterial color="#059669" roughness={0.2} />
+          </mesh>
+          <mesh position={[0, 0, 0.03]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.01, 0.01, 0.01, 10]} />
+            <meshBasicMaterial color="#0A0A0A" />
+          </mesh>
+        </group>
+
+        <group position={[0.075, 0.07, 0.17]}>
+          <mesh>
+            <sphereGeometry args={[0.038, 12, 12]} />
+            <meshStandardMaterial color="#FFFFFF" roughness={0.1} />
+          </mesh>
+          <mesh position={[0, 0, 0.024]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.022, 0.022, 0.01, 14]} />
+            <meshStandardMaterial color="#059669" roughness={0.2} />
+          </mesh>
+          <mesh position={[0, 0, 0.03]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.01, 0.01, 0.01, 10]} />
+            <meshBasicMaterial color="#0A0A0A" />
+          </mesh>
+        </group>
+
+        {/* Defined nose & confident smile */}
+        <mesh position={[0, 0.03, 0.2]}>
+          <sphereGeometry args={[0.024, 10, 10]} />
+          <meshStandardMaterial color="#F4A594" roughness={0.65} />
+        </mesh>
+        <mesh position={[0, -0.04, 0.19]}>
+          <boxGeometry args={[0.06, 0.012, 0.02]} />
+          <meshStandardMaterial color="#881337" />
+        </mesh>
+
+        {/* Dark wavy hair with side-part (Reference Image 1) */}
+        <mesh position={[0, 0.14, -0.02]} castShadow>
+          <sphereGeometry args={[0.23, 16, 16]} />
+          <meshStandardMaterial color="#171717" roughness={0.5} />
+        </mesh>
+        {/* Volumetric side-part front locks */}
+        <group position={[0, 0.22, 0.09]}>
+          <mesh position={[-0.06, 0.02, 0]} rotation={[0.2, -0.4, 0.3]} castShadow>
+            <boxGeometry args={[0.15, 0.08, 0.16]} />
+            <meshStandardMaterial color="#1C1917" roughness={0.5} />
+          </mesh>
+          <mesh position={[0.07, 0, 0]} rotation={[0.1, 0.3, -0.2]} castShadow>
+            <boxGeometry args={[0.14, 0.07, 0.15]} />
+            <meshStandardMaterial color="#171717" roughness={0.5} />
+          </mesh>
+        </group>
+      </group>
+
+      {/* ================= 4. FLOATING BRUTALIST SPEECH BUBBLE ================= */}
+      <group position={[0, 2.3, 0]}>
+        {/* Card shadow */}
+        <mesh position={[0.05, -0.05, -0.02]}>
+          <planeGeometry args={[3.0, 0.85]} />
+          <meshBasicMaterial color="#000000" />
+        </mesh>
+        {/* Main card */}
+        <mesh>
+          <planeGeometry args={[3.0, 0.85]} />
           <meshBasicMaterial color="#F7F7F2" />
         </mesh>
-        {/* Name tag */}
+        {/* Header tag */}
         <Text
-          position={[-1.15, 0.22, 0.02]}
+          position={[-1.35, 0.28, 0.02]}
           fontSize={0.11}
-          color="#FF4444"
+          color="#0A0A0A"
           anchorX="left"
           anchorY="middle"
           fontWeight={900}
         >
-          {name}:
+          {name.toUpperCase()} // QEVN PARTNER
         </Text>
-        {/* Phrase text */}
+        {/* Spoken phrase */}
         <Text
           position={[0, -0.08, 0.02]}
-          fontSize={0.105}
+          fontSize={0.13}
           color="#0A0A0A"
           anchorX="center"
           anchorY="middle"
-          maxWidth={2.5}
+          maxWidth={2.7}
+          textAlign="center"
+          fontWeight={700}
+          lineHeight={1.2}
         >
-          {phrases[currentPhraseIdx]}
+          {phrases[phraseIdx]}
         </Text>
       </group>
     </group>
@@ -134,49 +293,16 @@ function StylizedNpc({
 export function NPCs() {
   return (
     <group>
-      {/* NPC 1: Lead Engineer in Central Plaza */}
-      <StylizedNpc
-        initialPos={[-3, 0.08, -2]}
-        color="#1E293B"
-        hatColor="#B7FF00"
-        name="KAI // ENG"
+      {/* Hero NPC Julian (Tailored Creative Partner) in Central Plaza */}
+      <TailoredLeadNpc
+        position={[-4.5, 0.04, -3.5]}
+        name="Julian Vance"
         phrases={[
-          'QEVN builds digital products that live.',
-          'Next.js + Three.js at 60fps is pure art.',
-          'Did you check out the AI Lab?',
+          'Welcome to QEVN Town 2.0. The architecture here tells our story.',
+          'Notice how our digital products have physical town addresses?',
+          'The Post Office dispatches commissions straight to our engineering team.',
+          'Try visiting Pixel Coffee on Market Street. The terrace just got upgraded!',
         ]}
-        patrolRange={2.5}
-        patrolAxis="x"
-      />
-
-      {/* NPC 2: AI Researcher outside AI Lab */}
-      <StylizedNpc
-        initialPos={[-13, 0.08, -4]}
-        color="#0F172A"
-        hatColor="#3A7DFF"
-        name="DR. SORA // AI"
-        phrases={[
-          'The autonomous agents are refining weights.',
-          'Never build generic chat interfaces.',
-          'Everything in this town is data-driven.',
-        ]}
-        patrolRange={2.0}
-        patrolAxis="z"
-      />
-
-      {/* NPC 3: Coffee Enthusiast at Cafe */}
-      <StylizedNpc
-        initialPos={[14, 0.08, -2]}
-        color="#7C2D12"
-        hatColor="#FFD400"
-        name="LUCAS // CREATIVE"
-        phrases={[
-          'Dispatch #04 dropped at the cafe!',
-          'Don’t browse websites. Enter worlds.',
-          'Have you noticed the breaker in Alley 01?',
-        ]}
-        patrolRange={1.8}
-        patrolAxis="x"
       />
     </group>
   );
