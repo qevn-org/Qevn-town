@@ -130,7 +130,31 @@ export const COMMERCIAL_STUDIES: CommercialCaseStudy[] = [
       { label: 'Active Builders', value: '420+' },
       { label: 'Uptime', value: '99.999%' },
     ],
-    accentColor: '#B7FF00',
+    accentColor: '#10B981',
+    demoType: 'workspace',
+  },
+  {
+    id: 'casa-aa',
+    name: 'CASA AA // RESIDENCE',
+    category: 'Modern Architecture & Living Spaces',
+    district: '5th Avenue Quarter',
+    tagline: 'Sculpted white concrete, terracotta brick podium, and rooftop oasis.',
+    description:
+      'A benchmark modern luxury residence featuring curved white concrete massing, exposed textured brickwork, and an embedded rooftop plunge pool.',
+    qevnSolution:
+      'Architected smart residential environmental automation, spatial room presence sensors, and intelligent climate balancing for high-efficiency modern homes.',
+    features: [
+      'Sculpted curved white concrete facade with modeled architectural bevels',
+      'Exposed terracotta brick foundation with integrated secure access portal',
+      'Rooftop plunge pool with caustics and private sun deck lounge',
+      'Dynamic day/dusk/night architectural illumination presets',
+    ],
+    metrics: [
+      { label: 'Energy Efficiency', value: 'Net Zero' },
+      { label: 'Thermal Comfort', value: '99.4%' },
+      { label: 'Spatial Score', value: 'A+' },
+    ],
+    accentColor: '#9A3412',
     demoType: 'workspace',
   },
   {

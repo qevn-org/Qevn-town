@@ -39,6 +39,7 @@ interface TownStore {
   joystickVector: { x: number; y: number };
   interactRequested: boolean;
   isCinematicFocus: boolean;
+  architectureView: boolean;
 
   // Actions
   setGameState: (state: GameState) => void;
@@ -62,6 +63,7 @@ interface TownStore {
   setJoystickVector: (vec: { x: number; y: number }) => void;
   triggerInteract: () => void;
   clearInteract: () => void;
+  toggleArchitectureView: () => void;
 }
 
 // Initial state from localStorage if available
@@ -181,4 +183,9 @@ export const useTownStore = create<TownStore>((set, get) => ({
   triggerInteract: () => set({ interactRequested: true }),
 
   clearInteract: () => set({ interactRequested: false }),
+
+  architectureView: false,
+
+  toggleArchitectureView: () =>
+    set((state) => ({ architectureView: !state.architectureView })),
 }));

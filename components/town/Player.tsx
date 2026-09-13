@@ -126,7 +126,8 @@ export function Player() {
       activeLoc.id === 'loop-market' ||
       activeLoc.id === 'patch-clinic' ||
       activeLoc.id === 'ctrl-cowork' ||
-      activeLoc.id === 'automation-factory'
+      activeLoc.id === 'automation-factory' ||
+      activeLoc.id === 'casa-aa'
     ) {
       openOverlay('commercial-study', activeLoc.id);
     }

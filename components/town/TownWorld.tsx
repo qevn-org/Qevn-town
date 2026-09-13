@@ -15,6 +15,8 @@ import { ProjectStreet } from './Buildings/ProjectStreet';
 import { PostOffice } from './Buildings/PostOffice';
 import { CentralStation } from './Buildings/CentralStation';
 import { SecretSwitch } from './Buildings/SecretSwitch';
+import { CasaAaResidential } from './Buildings/CasaAaResidential';
+import { ModernSedan } from './Vehicles/ModernSedan';
 import { StreetProps } from './Props/StreetProps';
 import { Vehicles } from './Vehicles';
 import { NPCs } from './NPCs';
@@ -45,6 +47,11 @@ export function TownWorld() {
       <PostOffice />
       <CentralStation />
       <SecretSwitch />
+      <CasaAaResidential position={[-25, 0, 16]} />
+
+      {/* Manufactured Vehicles */}
+      <ModernSedan position={[-25, 0, 8.5]} rotation={[0, Math.PI, 0]} bodyColor="#0F172A" />
+      <ModernSedan position={[14, 0, -9.5]} rotation={[0, Math.PI / 2, 0]} bodyColor="#F8FAFC" />
 
       {/* Living City Dynamics */}
       <Vehicles />

@@ -14,6 +14,7 @@ import {
   Compass,
   Menu as MenuIcon,
   Navigation,
+  Eye,
 } from 'lucide-react';
 
 export function HUD() {
@@ -26,6 +27,8 @@ export function HUD() {
   const activeLocation = useTownStore((s) => s.activeLocation);
   const openOverlay = useTownStore((s) => s.openOverlay);
   const triggerInteract = useTownStore((s) => s.triggerInteract);
+  const architectureView = useTownStore((s) => s.architectureView);
+  const toggleArchitectureView = useTownStore((s) => s.toggleArchitectureView);
 
   const handleSoundToggle = () => {
     toggleSound();
@@ -123,6 +126,21 @@ export function HUD() {
               <VolumeX className="w-4 h-4 text-neutral-400" />
             )}
             <span className="hidden sm:inline">{soundEnabled ? 'AUDIO ON' : 'MUTED'}</span>
+          </button>
+
+          {/* Architecture View Toggle */}
+          <button
+            onClick={() => {
+              toggleArchitectureView();
+              soundManager.playClick(soundEnabled);
+            }}
+            title="Toggle Architecture Isometric Inspection View [C]"
+            className={`brutalist-btn px-2 sm:px-3 py-1.5 text-xs font-mono font-bold ${
+              architectureView ? 'bg-[#B7FF00] text-black ring-2 ring-black' : 'bg-[#F7F7F2] text-black'
+            }`}
+          >
+            <Eye className="w-4 h-4 text-black" />
+            <span className="hidden sm:inline">ARCH [C]</span>
           </button>
 
           {/* Mini-Map Button */}
