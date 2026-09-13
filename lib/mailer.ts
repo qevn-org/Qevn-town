@@ -1,7 +1,15 @@
 import { Resend } from 'resend';
 
-const resendApiKey = process.env.RESEND_API_KEY || '';
-const resend = new Resend(resendApiKey);
+let _resendClient: Resend | null = null;
+
+function getResend(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  if (!_resendClient) {
+    _resendClient = new Resend(apiKey);
+  }
+  return _resendClient;
+}
 
 export interface DispatchEmailPayload {
   dispatchId: string;
@@ -15,7 +23,8 @@ export interface DispatchEmailPayload {
 }
 
 export async function sendDispatchNotification(payload: DispatchEmailPayload) {
-  if (!resendApiKey) {
+  const resend = getResend();
+  if (!resend) {
     console.warn('[MAILER] RESEND_API_KEY is not set. Skipping email dispatch.');
     return { success: false, error: 'RESEND_API_KEY not configured' };
   }

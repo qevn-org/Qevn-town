@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 import { sendDispatchNotification } from '@/lib/mailer';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
