@@ -1,26 +1,122 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --qevn-black: #0a0a0a;
+  --qevn-white: #f7f7f2;
+  --qevn-lime: #b7ff00;
+  --qevn-yellow: #ffd400;
+  --qevn-red: #ff4d4d;
+  --qevn-blue: #4d7cff;
+  --qevn-gray: #e5e5df;
+  --qevn-dark-gray: #1e1e1e;
+  --background: #0a0a0a;
+  --foreground: #f7f7f2;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--qevn-black);
+  color: var(--qevn-white);
+  font-family: var(--font-space-grotesk), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Brutalist UI Design Tokens & Utility Classes */
+.brutalist-border {
+  border: 3px solid #000000;
+}
+
+.brutalist-border-thick {
+  border: 4px solid #000000;
+}
+
+.brutalist-shadow-sm {
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.brutalist-shadow {
+  box-shadow: 5px 5px 0px #000000;
+}
+
+.brutalist-shadow-lg {
+  box-shadow: 8px 8px 0px #000000;
+}
+
+.brutalist-shadow-lime {
+  box-shadow: 6px 6px 0px #b7ff00;
+}
+
+.brutalist-btn {
+  border: 3px solid #000000;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 4px 4px 0px #000000;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.brutalist-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0px #000000;
+}
+
+.brutalist-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+/* Brutalist Grid Background Pattern */
+.bg-brutalist-grid {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+}
+
+.bg-brutalist-grid-dark {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+}
+
+/* Scanlines overlay effect */
+.scanlines {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.03),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.03)
+  );
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
+}
+
+/* Custom Brutalist Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f7f7f2;
+  border-left: 2px solid #000000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0a0a0a;
+  border: 2px solid #f7f7f2;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b7ff00;
 }
